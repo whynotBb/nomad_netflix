@@ -4,7 +4,9 @@ import { RecoilRoot } from "recoil";
 import { ThemeProvider } from "styled-components";
 import App from "./App";
 import { createGlobalStyle } from "styled-components";
+import { QueryClient, QueryClientProvider } from "react-query";
 import { theme } from "./theme";
+import { isPropertySignature } from "typescript";
 
 const GlobalStyle = createGlobalStyle`
 @import url('https://fonts.googleapis.com/css2?family=Source+Sans+Pro:wght@300;400&display=swap');
@@ -39,6 +41,8 @@ footer, header, hgroup, main, menu, nav, section {
 }
 body {
   line-height: 1;
+  color:${(props) => props.theme.white.darker};
+  background-color:black;
 }
 menu, ol, ul {
   list-style: none;
@@ -70,15 +74,17 @@ a {
   color:inherit;
 }
 `;
-
+const client = new QueryClient();
 ReactDOM.render(
-  <React.StrictMode>
-    <RecoilRoot>
-      <ThemeProvider theme={theme}>
-        <GlobalStyle />
-        <App />
-      </ThemeProvider>
-    </RecoilRoot>
-  </React.StrictMode>,
-  document.getElementById("root")
+    <React.StrictMode>
+        {/* <RecoilRoot> */}
+        <QueryClientProvider client={client}>
+            <ThemeProvider theme={theme}>
+                <GlobalStyle />
+                <App />
+            </ThemeProvider>
+        </QueryClientProvider>
+        {/* </RecoilRoot> */}
+    </React.StrictMode>,
+    document.getElementById("root")
 );
