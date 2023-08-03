@@ -1,42 +1,50 @@
 import { useQuery } from "react-query";
-import { IGetMoviesResult, getMovies } from "../api";
 import styled from "styled-components";
-import { makeImagePath } from "../utils";
 import { motion, AnimatePresence } from "framer-motion";
+import { getMovies, IGetMoviesResult } from "../api";
+import { makeImagePath } from "../utils";
 import { useState } from "react";
+import { useHistory, useRouteMatch } from "react-router-dom";
 
 const Wrapper = styled.div`
     background: black;
+    padding-bottom: 200px;
+    overflow-x: hidden;
 `;
+
 const Loader = styled.div`
     height: 20vh;
     display: flex;
     justify-content: center;
-    align-items: baseline;
+    align-items: center;
 `;
+
 const Banner = styled.div<{ bgPhoto: string }>`
     height: 100vh;
     display: flex;
     flex-direction: column;
     justify-content: center;
     padding: 60px;
-    color: #fff;
     background-image: linear-gradient(rgba(0, 0, 0, 0), rgba(0, 0, 0, 1)),
         url(${(props) => props.bgPhoto});
     background-size: cover;
 `;
+
 const Title = styled.h2`
     font-size: 68px;
     margin-bottom: 20px;
 `;
+
 const Overview = styled.p`
     font-size: 30px;
     width: 50%;
 `;
-const Slider = styled(motion.div)`
+
+const Slider = styled.div`
     position: relative;
     top: -100px;
 `;
+
 const Row = styled(motion.div)`
     display: grid;
     gap: 5px;
@@ -44,9 +52,35 @@ const Row = styled(motion.div)`
     position: absolute;
     width: 100%;
 `;
-const Box = styled(motion.div)`
+
+const Box = styled(motion.div)<{ bgPhoto: string }>`
     background-color: white;
+    background-image: url(${(props) => props.bgPhoto});
+    background-size: cover;
+    background-position: center center;
     height: 200px;
+    font-size: 66px;
+    cursor: pointer;
+    &:first-child {
+        transform-origin: center left;
+    }
+    &:last-child {
+        transform-origin: center right;
+    }
+`;
+
+const Info = styled(motion.div)`
+    padding: 10px;
+    background-color: ${(props) => props.theme.black.lighter};
+    opacity: 0;
+    position: absolute;
+    width: 100%;
+    bottom: 0;
+    h4 {
+        font-size: 18px;
+        text-align: center;
+        color: #fff;
+    }
 `;
 const rowVariants = {
     hidden: {
@@ -59,13 +93,56 @@ const rowVariants = {
         x: -window.outerWidth - 5,
     },
 };
+
+const boxVariants = {
+    normal: {
+        scale: 1,
+    },
+    hover: {
+        scale: 1.3,
+        y: -50,
+        transition: {
+            duration: 0.5,
+            type: "tween",
+        },
+    },
+};
+
+const infoVariants = {
+    hover: {
+        opacity: 1,
+        transition: {
+            duration: 0.5,
+            type: "tween",
+        },
+    },
+};
+
+const offset = 6;
 function Home() {
+    const history = useHistory();
+    const bigMovieMatch = useRouteMatch("/movies/:movieId");
+    console.log(bigMovieMatch);
+
     const { data, isLoading } = useQuery<IGetMoviesResult>(
         ["movies", "nowPlaying"],
         getMovies
     );
     const [index, setIndex] = useState(0);
-    const incraseIndex = () => setIndex((prev) => prev + 1);
+    const [leaving, setLeaving] = useState(false);
+    const incraseIndex = () => {
+        if (data) {
+            if (leaving) return;
+            toggleLeaving();
+            const totalMovies = data.results.length - 1;
+            const maxIndex = Math.floor(totalMovies / offset) - 1;
+            setIndex((prev) => (prev === maxIndex ? 0 : prev + 1));
+        }
+    };
+    const toggleLeaving = () => setLeaving((prev) => !prev);
+    const onBoxClicked = (movieId: number) => {
+        history.push(`/movies/${movieId}`);
+    };
     return (
         <Wrapper>
             {isLoading ? (
@@ -82,7 +159,10 @@ function Home() {
                         <Overview>{data?.results[0].overview}</Overview>
                     </Banner>
                     <Slider>
-                        <AnimatePresence>
+                        <AnimatePresence
+                            initial={false}
+                            onExitComplete={toggleLeaving}
+                        >
                             <Row
                                 variants={rowVariants}
                                 initial="hidden"
@@ -91,12 +171,50 @@ function Home() {
                                 transition={{ type: "tween", duration: 1 }}
                                 key={index}
                             >
-                                {[1, 2, 3, 4, 5, 6].map((i) => (
-                                    <Box key={i}>{i}</Box>
-                                ))}
+                                {data?.results
+                                    .slice(1)
+                                    .slice(
+                                        offset * index,
+                                        offset * index + offset
+                                    )
+                                    .map((movie) => (
+                                        <Box
+                                            onClick={() =>
+                                                onBoxClicked(movie.id)
+                                            }
+                                            key={movie.id}
+                                            whileHover="hover"
+                                            initial="normal"
+                                            variants={boxVariants}
+                                            transition={{ type: "tween" }}
+                                            bgPhoto={makeImagePath(
+                                                movie.backdrop_path ||
+                                                    movie.poster_path,
+                                                "w500"
+                                            )}
+                                        >
+                                            <Info variants={infoVariants}>
+                                                <h4>{movie.title}</h4>
+                                            </Info>
+                                        </Box>
+                                    ))}
                             </Row>
                         </AnimatePresence>
                     </Slider>
+                    <AnimatePresence>
+                        <motion.div
+                            style={{
+                                position: "absolute",
+                                width: "40vw",
+                                height: "80vh",
+                                backgroundColor: "red",
+                                top: 50,
+                                left: 0,
+                                right: 0,
+                                margin: "0 auto",
+                            }}
+                        />
+                    </AnimatePresence>
                 </>
             )}
         </Wrapper>
