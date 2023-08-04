@@ -77,14 +77,14 @@ a {
 const client = new QueryClient();
 ReactDOM.render(
     <React.StrictMode>
-        {/* <RecoilRoot> */}
-        <QueryClientProvider client={client}>
-            <ThemeProvider theme={theme}>
-                <GlobalStyle />
-                <App />
-            </ThemeProvider>
-        </QueryClientProvider>
-        {/* </RecoilRoot> */}
+        <RecoilRoot>
+            <QueryClientProvider client={client}>
+                <ThemeProvider theme={theme}>
+                    <GlobalStyle />
+                    <App />
+                </ThemeProvider>
+            </QueryClientProvider>
+        </RecoilRoot>
     </React.StrictMode>,
     document.getElementById("root")
 );
